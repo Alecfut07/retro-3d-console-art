@@ -1,0 +1,10 @@
+# Blender
+*.blend*
+.blend
+.Trash/
+__pycache__/
+
+# Python
+*.pyc
+*.pyo
+*.pyd
