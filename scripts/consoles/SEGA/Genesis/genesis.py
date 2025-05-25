@@ -63,6 +63,76 @@ def create_cartridge_slot(main_body):
     main_body.modifiers["Bevel"].width = 0.002
     main_body.modifiers["Bevel"].segments = 2
 
+def create_cartridge_slot_details(main_body):
+    # Create guide rails
+    def create_guide_rail(side='left'):
+        bpy.ops.mesh.primitive_cube_add(size=1)
+        rail = bpy.context.active_object
+        rail.name = f"Genesis_Guide_Rail_{side}"
+
+        # Set dimensions for the guide rail
+        rail.scale.x = 0.005 # Width
+        rail.scale.y = 0.15 # Depth
+        rail.scale.z = 0.015 # Height
+
+        # Apply scale
+        bpy.ops.object.transform_apply(scale=True)
+
+        # Position the rail
+        x_pos = 0.055 if side == 'left' else -0.055
+        rail.location.x = x_pos
+        rail.location.y = 0.1
+        rail.location.z = 0.045
+
+        return rail
+    
+    # Create connector pins
+    def create_connector_pins():
+        bpy.ops.mesh.primitive_cube_add(size=1)
+        pins = bpy.context.active_object
+        pins.name = "Genesis_Connector_Pins"
+
+        # Set dimensions for the pins
+        pins.scale.x = 0.1 # Width
+        pins.scale.y = 0.01 # Depth
+        pins.scale.z = 0.01 # Height
+
+        # Apply scale
+        bpy.ops.object.transform_apply(scale=True)
+
+        # Position the pins
+        pins.location.x = 0
+        pins.location.y = 0.15
+        pins.location.z = 0.045
+
+        return pins
+    
+    # Create the guide rails
+    left_rail = create_guide_rail(side='left')
+    right_rail = create_guide_rail(side='right')
+
+    # Create the connector pins
+    connector_pins = create_connector_pins()
+
+    # Create materials for the details
+    def create_rail_material():
+        mat = bpy.data.materials.new(name="Genesis_Rail_Material")
+        mat.use_nodes = True
+        nodes = mat.node_tree.nodes
+        nodes["Principled BSDF"].inputs["Base Color"].default_value = (0.1, 0.1, 0.1, 1)
+        return mat
+    
+    # Assign materials
+    rail_mat = create_rail_material()
+    left_rail.data.materials.append(rail_mat)
+    right_rail.data.materials.append(rail_mat)
+    connector_pins.data.materials.append(rail_mat)
+
+    # Parent all details to main body
+    left_rail.parent = main_body
+    right_rail.parent = main_body
+    connector_pins.parent = main_body
+
 def create_materials():
     # Create basic material
     mat = bpy.data.materials.new(name="Genesis_Black")
@@ -83,6 +153,9 @@ def main():
 
     # Create cartridge slot
     create_cartridge_slot(main_body)
+
+    # Create cartridge slot details
+    create_cartridge_slot_details(main_body)
 
     # Create and assign material
     mat = create_materials()
