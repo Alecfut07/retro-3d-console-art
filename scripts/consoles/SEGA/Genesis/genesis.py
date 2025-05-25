@@ -27,6 +27,42 @@ def create_main_body():
 
     return main_body
 
+def create_cartridge_slot(main_body):
+    # Create the cartridge slot
+    bpy.ops.mesh.primitive_cube_add(size=1)
+    slot = bpy.context.active_object
+    slot.name = "Genesis_Cartridge_Slot"
+
+    # Set dimensions for the slot
+    slot.scale.x = 0.12 # Width of the slot
+    slot.scale.y = 0.15 # Depth of the slot
+    slot.scale.z = 0.02 # Height of the slot
+
+    # Apply scale
+    bpy.ops.object.transform_apply(scale=True)
+
+    # Position the slot on top of the main body
+    slot.location.x = 0 # Center horizontally
+    slot.location.y = 0.1 # Slightly forward on the console
+    slot.location.z = 0.045 # On top of the main body
+
+    # Create a boolean modifier to cut the slot 
+    bool_mod = main_body.modifiers.new(name="Cartridge_Slot", type='BOOLEAN')
+    bool_mod.object = slot
+    bool_mod.operation = 'DIFFERENCE'
+
+    # Apply the boolean modifier
+    bpy.context.view_layer.objects.active = main_body
+    bpy.ops.object.modifier_apply(modifier="Cartridge_Slot")
+
+    # Delete the slot object
+    bpy.data.objects.remove(slot)
+
+    # Add bevel to the slot edges
+    bpy.ops.object.modifier_add(type='BEVEL')
+    main_body.modifiers["Bevel"].width = 0.002
+    main_body.modifiers["Bevel"].segments = 2
+
 def create_materials():
     # Create basic material
     mat = bpy.data.materials.new(name="Genesis_Black")
@@ -44,6 +80,9 @@ def main():
 
     # Create main body
     main_body = create_main_body()
+
+    # Create cartridge slot
+    create_cartridge_slot(main_body)
 
     # Create and assign material
     mat = create_materials()
