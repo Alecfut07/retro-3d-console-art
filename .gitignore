@@ -1,10 +1,153 @@
-# Blender
-*.blend*
-.blend
-.Trash/
-__pycache__/
+# === Blender ===
+# Ignore all Blender project backups and autosaves
+*.blend[1-9]
+*.blend[0-9][0-9]*
+*.blend@
+*.blend~
 
-# Python
-*.pyc
-*.pyo
-*.pyd
+# If you want to ignore all .blend files, uncomment the next line:
+*.blend
+
+# === macOS System Files ===
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+
+# === Python ===
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Virtual environment
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Distribution / packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Testing and coverage
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Translations
+*.mo
+*.pot
+
+# Database files
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask
+instance/
+.webassets-cache
+
+# Scrapy
+.scrapy/
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.pybuilder/
+target/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# Pipenv
+# If you want reproducible environments, keep Pipfile.lock
+# Pipfile.lock
+
+# Poetry
+poetry.toml
+# Keep poetry.lock for reproducibility
+# Remove the following line if you want lock file tracked
+# poetry.lock
+
+# PDM
+.pdm.toml
+# pdm.lock
+
+# PEP 582
+__pypackages__/
+
+# Mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Ruff
+.ruff_cache/
+
+# Pyre
+.pyre/
+
+# Pytype
+.pytype/
+
+# Cython
+cython_debug/
+
+# Language Server Protocol config
+pyrightconfig.json
+
+# Editors / IDEs
+.vscode/
+.idea/
+.spyderproject
+.spyproject
+.ropeproject
+
+# MkDocs
+/site
