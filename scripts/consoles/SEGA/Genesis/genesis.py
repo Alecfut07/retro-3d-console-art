@@ -247,11 +247,59 @@ def create_pin_contacts(main_body):
         contact_mat = bpy.data.materials.new(name=f"Genesis_Contact_Material_{index}")
         contact_mat.use_nodes = True
         nodes = contact_mat.node_tree.nodes
+        links = contact_mat.node_tree.links
 
-        # Set up metallic material
-        nodes["Principled BSDF"].inputs["Base Color"].default_value = (0.9, 0.9, 0.9, 1)
-        nodes["Principled BSDF"].inputs["Metallic"].default_value = 1.0
-        nodes["Principled BSDF"].inputs["Roughness"].default_value = 0.1
+        # Clear default nodes
+        nodes.clear()
+
+        # Create nodes
+        output = nodes.new('ShaderNodeOutputMaterial')
+        principled = nodes.new('ShaderNodeBsdfPrincipled')
+        bump = nodes.new('ShaderNodeBump')
+        noise = nodes.new('ShaderNodeTexNoise')
+        color_ramp = nodes.new('ShaderNodeValToRGB')
+        mix_shader = nodes.new('ShaderNodeMixShader')
+        emission = nodes.new('ShaderNodeEmission')
+
+        # Set up Noise texture for wear pattern
+        noise.inputs['Scale'].default_value = 200.0
+        noise.inputs['Detail'].default_value = 2.0
+        noise.inputs['Roughness'].default_value = 0.7
+
+        # Set up Color Ramp for wear control
+        color_ramp.color_ramp.elements[0].position = 0.4
+        color_ramp.color_ramp.elements[0].color = (0.7, 0.7, 0.7, 1) # Worn color
+        color_ramp.color_ramp.elements[1].position = 0.6
+        color_ramp.color_ramp.elements[1].color = (0.95, 0.95, 0.95, 1) # Clean color
+
+        # Set up Principled BSDF for clean areas
+        principled.inputs["Base Color"].default_value = (0.95, 0.95, 0.95, 1)
+        principled.inputs["Metallic"].default_value = 1.0
+        principled.inputs["Roughness"].default_value = 0.15
+
+        # Set up Emission for subtle glow in worn areas
+        emission.inputs["Color"].default_value = (0.8, 0.8, 0.8, 1)
+        emission.inputs["Strength"].default_value = 0.1
+
+        # Set up Bump node
+        bump.inputs["Strength"].default_value = 0.02
+
+        # Connect nodes for wear effect
+        links.new(noise.outputs["Color"], color_ramp.inputs["Fac"])
+        links.new(color_ramp.outputs["Color"], principled.inputs["Base Color"])
+        links.new(color_ramp.outputs["Color"], emission.inputs["Color"])
+
+        # Connect nodes for surface detail
+        links.new(noise.outputs["Color"], bump.inputs["Height"])
+        links.new(bump.outputs["Normal"], principled.inputs["Normal"])
+
+        # Mix shader for worn/clean areas
+        links.new(principled.outputs["BSDF"], mix_shader.inputs[1])
+        links.new(emission.outputs["Emission"], mix_shader.inputs[2])
+        links.new(color_ramp.outputs["Color"], mix_shader.inputs["Fac"])
+
+        # Connect to output
+        links.new(mix_shader.outputs["Shader"], output.inputs["Surface"])
 
         # Add the material to the contact
         contact.data.materials.append(contact_mat)
