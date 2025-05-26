@@ -220,6 +220,96 @@ def create_detailed_connector_pins(main_body):
     bpy.context.view_layer.objects.active = connector_base
     bpy.ops.object.parent_set(type='OBJECT')
 
+def create_pin_contacts(main_body):
+    def create_contact(index, total_contacts=32):
+        bpy.ops.mesh.primitive_cube_add(size=1)
+        contact = bpy.context.active_object
+        contact.name = f"Genesis_Pin_Contact_{index}"
+
+        # Set dimensions for the contact
+        contact.scale.x = 0.001 # Width
+        contact.scale.y = 0.003 # Depth
+        contact.scale.z = 0.006 # Height
+
+        # Apply scale
+        bpy.ops.object.transform_apply(scale=True)
+
+        # Calculate position
+        spacing = 0.1 / (total_contacts + 1)
+        x_pos = -0.05 + (spacing * (index + 1))
+
+        # Position the contact
+        contact.location.x = x_pos
+        contact.location.y = 0.155 # Slightly forward of the pins
+        contact.location.z = 0.045
+
+        # Create the contact material
+        contact_mat = bpy.data.materials.new(name=f"Genesis_Contact_Material_{index}")
+        contact_mat.use_nodes = True
+        nodes = contact_mat.node_tree.nodes
+
+        # Set up metallic material
+        nodes["Principled BSDF"].inputs["Base Color"].default_value = (0.9, 0.9, 0.9, 1)
+        nodes["Principled BSDF"].inputs["Metallic"].default_value = 1.0
+        nodes["Principled BSDF"].inputs["Roughness"].default_value = 0.1
+
+        # Add the material to the contact
+        contact.data.materials.append(contact_mat)
+
+        return contact
+    
+    # Create contact housing
+    def create_contact_housing():
+        bpy.ops.mesh.primitive_cube_add(size=1)
+        housing = bpy.context.active_object
+        housing.name = "Genesis_Contact_Housing"
+
+        # Set dimensions for the housing
+        housing.scale.x = 0.102 # Width
+        housing.scale.y = 0.004 # Depth
+        housing.scale.z = 0.008 # Height
+
+        # Apply scale
+        bpy.ops.object.transform_apply(scale=True)
+
+        # Position the housing
+        housing.location.x = 0
+        housing.location.y = 0.155
+        housing.location.z = 0.045
+
+        # Create housing material
+        housing_mat = bpy.data.materials.new(name="Genesis_Contact_Housing_Material")
+        housing_mat.use_nodes = True
+        nodes = housing_mat.node_tree.nodes
+        nodes["Principled BSDF"].inputs["Base Color"].default_value = (0.05, 0.05, 0.05, 1)
+        nodes["Principled BSDF"].inputs["Roughness"].default_value = 0.3
+
+        # Add the material to the housing
+        housing.data.materials.append(housing_mat)
+
+        return housing
+    
+    # Create all contacts
+    contacts = []
+    for i in range(32): # SEGA Genesis typically has 32 contacts
+        contact = create_contact(i)
+        contacts.append(contact)
+
+    # Create the housing
+    housing = create_contact_housing()
+
+    # Parent all objects to main body
+    housing.parent = main_body
+    for contact in contacts:
+        contact.parent = main_body
+
+    # Group all contact parts
+    contact_parts = [housing] + contacts
+    for obj in contact_parts:
+        obj.select_set(True)
+    bpy.context.view_layer.objects.active = housing
+    bpy.ops.object.parent_set(type='OBJECT')
+
 def create_materials():
     # Create basic material
     mat = bpy.data.materials.new(name="Genesis_Black")
@@ -246,6 +336,9 @@ def main():
 
     # Create detailed connector pins
     create_detailed_connector_pins(main_body)
+
+    # Create pin contacts
+    create_pin_contacts(main_body)
 
     # Create and assign material
     mat = create_materials()
