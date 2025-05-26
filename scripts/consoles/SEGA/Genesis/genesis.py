@@ -13,16 +13,16 @@ def create_main_body():
     main_body.name = "Genesis_Main_Body"
 
     # Set dimensions (in meters)
-    main_body.scale.x = 0.32 # Width
-    main_body.scale.y = 0.20 # Depth
-    main_body.scale.z = 0.07 # Height
+    main_body.scale.x = 0.2781 # Width: 10.95 inches (278.1 mm)
+    main_body.scale.y = 0.2146 # Depth: 8.45 inches (214.6 mm)
+    main_body.scale.z = 0.0572 # Height: 2.25 inches (57.2 mm)
 
     # Apply scale
     bpy.ops.object.transform_apply(scale=True)
 
     # Add bevel for rounded edges
     bpy.ops.object.modifier_add(type='BEVEL')
-    main_body.modifiers["Bevel"].width = 0.005
+    main_body.modifiers["Bevel"].width = 0.002 # Subtle bevel
     main_body.modifiers["Bevel"].segments = 3
 
     return main_body
@@ -33,18 +33,18 @@ def create_cartridge_slot(main_body):
     slot = bpy.context.active_object
     slot.name = "Genesis_Cartridge_Slot"
 
-    # Set dimensions for the slot
-    slot.scale.x = 0.12 # Width of the slot
-    slot.scale.y = 0.15 # Depth of the slot
-    slot.scale.z = 0.02 # Height of the slot
+    # Set dimensions for the slot (in meters)
+    slot.scale.x = 0.1143 # Length: 4.5 inches (114.3 mm)
+    slot.scale.y = 0.0127 # Depth: 0.5 inches (12.7 mm)
+    slot.scale.z = 0.01905 # Width: 0.75 inches (19.05 mm)
 
     # Apply scale
     bpy.ops.object.transform_apply(scale=True)
 
     # Position the slot on top of the main body
     slot.location.x = 0 # Center horizontally
-    slot.location.y = 0.1 # Slightly forward on the console
-    slot.location.z = 0.045 # On top of the main body
+    slot.location.y = 0.1073 # Half of depth (214.6/2 mm)
+    slot.location.z = 0.0286 # Half of height (57.2/2 mm)
 
     # Create a boolean modifier to cut the slot 
     bool_mod = main_body.modifiers.new(name="Cartridge_Slot", type='BOOLEAN')
@@ -60,7 +60,7 @@ def create_cartridge_slot(main_body):
 
     # Add bevel to the slot edges
     bpy.ops.object.modifier_add(type='BEVEL')
-    main_body.modifiers["Bevel"].width = 0.002
+    main_body.modifiers["Bevel"].width = 0.001
     main_body.modifiers["Bevel"].segments = 2
 
 def create_cartridge_slot_details(main_body):
