@@ -358,6 +358,117 @@ def create_pin_contacts(main_body):
     bpy.context.view_layer.objects.active = housing
     bpy.ops.object.parent_set(type='OBJECT')
 
+def create_buttons(main_body):
+    def create_button(name, position_x, is_power=False):
+        # Create the button base
+        bpy.ops.mesh.primitive_cube_add(size=1)
+        button = bpy.context.active_object
+        button.name = f"Genesis_{name}_Button"
+
+        # Set dimensions (in meters)
+        button.scale.x = 0.0127 # Width: 0.5 inches (12.7 mm)
+        button.scale.y = 0.00635 # Height: 0.25 inches (6.35 mm)
+        button.scale.z = 0.002 # Depth: 0.08 inches (2 mm)
+
+        # Apply scale
+        bpy.ops.object.transform_apply(scale=True)
+
+        # Position the button
+        button.location.x = position_x
+        button.location.y = 0.1073 # Half of depth (214.6/2 mm)
+        button.location.z = 0.0286 # Half of height (57.2/2 mm)
+
+        # Add bevel for rounded edges
+        bpy.ops.object.modifier_add(type='BEVEL')
+        bevel_mod = button.modifiers["Bevel"]
+        bevel_mod.width = 0.0005
+        bevel_mod.segments = 3
+
+        # Create button material
+        button_mat = bpy.data.materials.new(name=f"Genesis_{name}_Button_Material")
+        button_mat.use_nodes = True
+        nodes = button_mat.node_tree.nodes
+
+        # Set up button material
+        if is_power:
+            # Power button is typically red
+            nodes["Principled BSDF"].inputs["Base Color"].default_value = (0.8, 0.1, 0.1, 1)
+        else:
+            # Reset button is typically black
+            nodes["Principled BSDF"].inputs["Base Color"].default_value = (0.02, 0.02, 0.02, 1)
+
+        nodes["Principled BSDF"].inputs["Roughness"].default_value = 0.3
+        nodes["Principled BSDF"].inputs["Metallic"].default_value = 0.1
+        
+        # Add the material to the button
+        button.data.materials.append(button_mat)
+        
+        return button
+    
+    def create_power_led():
+        # Create the LED indicator
+        bpy.ops.mesh.primitive_cylinder_add(radius=0.002, depth=0.001)
+        led = bpy.context.active_object
+        led.name = "Genesis_Power_LED"
+
+        # Position the LED
+        led.location.x = -0.02 # Left of power button
+        led.location.y = 0.1073 # Half of depth (214.6/2 mm)
+        led.location.z = 0.0286 # Half of height (57.2/2 mm)
+
+        # Create LED material
+        led_mat = bpy.data.materials.new(name="Genesis_Power_LED_Material")
+        led_mat.use_nodes = True
+        nodes = led_mat.node_tree.nodes
+        links = led_mat.node_tree.links
+
+        # Clear default nodes
+        nodes.clear()
+        
+        # Create nodes
+        output = nodes.new('ShaderNodeOutputMaterial')
+        emission = nodes.new('ShaderNodeEmission')
+        mix = nodes.new('ShaderNodeMixShader')
+        principled = nodes.new('ShaderNodeBsdfPrincipled')
+
+        # Set up emission shader
+        emission.inputs["Color"].default_value = (0.8, 0.1, 0.1, 1) # Red color
+        emission.inputs["Strength"].default_value = 0.5
+
+        # Set up principled shader
+        principled.inputs["Base Color"].default_value = (0.8, 0.1, 0.1, 1)
+        principled.inputs["Metallic"].default_value = 0.1
+        principled.inputs["Roughness"].default_value = 0.3
+
+        # Connect nodes
+        links.new(emission.outputs["Emission"], mix.inputs[1])
+        links.new(principled.outputs["BSDF"], mix.inputs[2])
+        links.new(mix.outputs["Shader"], output.inputs["Surface"])
+
+        # Set mix factor for emission strength
+        mix.inputs["Fac"].default_value = 0.5
+
+        # Add the material to the LED
+        led.data.materials.append(led_mat)
+
+        return led
+    
+    # Create power button (left of cartridge slot)
+    power_button = create_button("Power", -0.03, is_power=True)
+
+    # Create reset button (right of cartridge slot)
+    reset_button = create_button("Reset", 0.03)
+
+    # Create power LED
+    power_led = create_power_led()
+
+    # Parent all buttons to main body
+    power_button.parent = main_body
+    reset_button.parent = main_body
+    power_led.parent = main_body
+
+    return power_button, reset_button, power_led
+
 def create_materials():
     # Create basic material
     mat = bpy.data.materials.new(name="Genesis_Black")
@@ -387,6 +498,9 @@ def main():
 
     # Create pin contacts
     create_pin_contacts(main_body)
+
+    # Create buttons
+    power_button, reset_button, power_led = create_buttons(main_body)
 
     # Create and assign material
     mat = create_materials()
