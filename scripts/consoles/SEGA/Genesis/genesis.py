@@ -469,6 +469,132 @@ def create_buttons(main_body):
 
     return power_button, reset_button, power_led
 
+def create_controller_ports(main_body):
+    def create_dsub_port(name, position_x):
+        # Create the port housing
+        bpy.ops.mesh.primitive_cube_add(size=1)
+        port = bpy.context.active_object
+        port.name = f"Genesis_{name}_Port"
+
+        # Set dimensions (in meters)
+        port.scale.x = 0.0381 # Width: 1.5 inches (38.1 mm)
+        port.scale.y = 0.005 # Depth: 0.2 inches (5 mm)
+        port.scale.z = 0.0127 # Height: 0.5 inches (12.7 mm)
+
+        # Apply scale
+        bpy.ops.object.transform_apply(scale=True)
+
+        # Position the port
+        port.location.x = position_x
+        port.location.y = 0.2146 # Front face (214.6 mm depth)
+        port.location.z = 0.0286 # Half of height (57.2/2 mm)
+
+        # Create the 9-pin connector
+        def create_pins():
+            pins = []
+            # Pin layout for 9-pin D-sub
+            pin_positions = [
+                (-0.015, 0.005), # Pin 1
+                (-0.015, 0), # Pin 2
+                (-0.015, -0.005), # Pin 3
+                (0, 0.005), # Pin 4
+                (0, 0), # Pin 5
+                (0, -0.005), # Pin 6
+                (0.015, 0.005), # Pin 7
+                (0.015, 0), # Pin 8
+                (0.015, -0.005) # Pin 9
+            ]
+
+            for i, (x, y) in enumerate(pin_positions, 1):
+                bpy.ops.mesh.primitive_cylinder_add(radius=0.001, depth=0.003)
+                pin = bpy.context.active_object
+                pin.name = f"Genesis_{name}_Pin_{i}"
+
+                # Position the pin
+                pin.location.x = position_x + x
+                pin.location.y = 0.2146 + 0.003 # Slightly forward of port
+                pin.location.z = 0.0286 + y
+
+                # Create pin material
+                pin_mat = bpy.data.materials.new(name=f"Genesis_{name}_Pin_Material_{i}")
+                pin_mat.use_nodes = True
+                nodes = pin_mat.node_tree.nodes
+
+                # Set up pin material (metallic)
+                nodes["Principled BSDF"].inputs["Base Color"].default_value = (0.8, 0.8, 0.8, 1)
+                nodes["Principled BSDF"].inputs["Metallic"].default_value = 1.0
+                nodes["Principled BSDF"].inputs["Roughness"].default_value = 0.2
+
+                # Add the material to the pin
+                pin.data.materials.append(pin_mat)
+                pins.append(pin)
+            
+            return pins
+
+        # Create port material
+        port_mat = bpy.data.materials.new(name=f"Genesis_{name}_Port_Material")
+        port_mat.use_nodes = True
+        nodes = port_mat.node_tree.nodes
+
+        # Set up port material (black)
+        nodes["Principled BSDF"].inputs["Base Color"].default_value = (0.02, 0.02, 0.02, 1)
+        nodes["Principled BSDF"].inputs["Roughness"].default_value = 0.3
+
+        # Add the material to the port
+        port.data.materials.append(port_mat)
+
+        # Create the pins
+        pins = create_pins()
+
+        # Parent pins to port
+        for pin in pins:
+            pin.parent = port
+        
+        return port, pins
+    
+    # Create both controller ports
+    port1, pins1 = create_dsub_port("Controller1", -0.02)
+    port2, pins2 = create_dsub_port("Controller2", 0.02)
+
+    # Parent ports to main body
+    port1.parent = main_body
+    port2.parent = main_body
+
+    # Create recess for ports
+    def create_port_recess():
+        bpy.ops.mesh.primitive_cube_add(size=1)
+        recess = bpy.context.active_object
+        recess.name = "Genesis_Controller_Recess"
+
+        # Set dimensions for recess
+        recess.scale.x = 0.085 # Width to cover both ports
+        recess.scale.y = 0.008 # Depth
+        recess.scale.z = 0.015 # Height
+
+        # Apply scale
+        bpy.ops.object.transform_apply(scale=True)
+
+        # Position the recess
+        recess.location.x = 0
+        recess.location.y = 0.2146 
+        recess.location.z = 0.0286
+
+        # Create boolean modifier to cut recess
+        bool_mod = main_body.modifiers.new(name="Controller_Ports_Recess", type='BOOLEAN')
+        bool_mod.object = recess
+        bool_mod.operation = 'DIFERENCE'
+
+        # Apply the boolean modifier
+        bpy.context.view_layer.objects.active = main_body
+        bpy.ops.object.modifier_apply(modifier="Controller_Ports_Recess")
+
+        # Delete the recess object
+        bpy.data.objects.remove(recess)
+    
+    # Create the recess
+
+    return port1, port2, pins1, pins2
+
 def create_materials():
     # Create basic material
     mat = bpy.data.materials.new(name="Genesis_Black")
@@ -501,6 +627,9 @@ def main():
 
     # Create buttons
     power_button, reset_button, power_led = create_buttons(main_body)
+
+    # Create controller ports
+    port1, port2, pins1, pins2 = create_controller_ports(main_body)
 
     # Create and assign material
     mat = create_materials()
