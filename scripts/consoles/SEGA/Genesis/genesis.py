@@ -789,6 +789,20 @@ def create_materials():
 
     return mat
 
+def join_objects(main_body):
+    # Select all objects except the main body
+    bpy.ops.object.select_all(action='DESELECT')
+    for obj in bpy.data.objects:
+        if obj != main_body and obj.parent == main_body:
+            obj.select_set(True)
+
+    # Set main body as active object
+    main_body.select_set(True)
+    bpy.context.view_layer.objects.active = main_body
+
+    # Join all selected objects
+    bpy.ops.object.join()
+
 def main():
     # Clear existing scene
     clear_scene()
@@ -817,6 +831,9 @@ def main():
     # Create and assign material
     mat = create_materials()
     main_body.data.materials.append(mat)
+
+    # Join all objects
+    #join_objects(main_body)
 
 if __name__ == "__main__":
     main()
