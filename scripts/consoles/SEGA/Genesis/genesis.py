@@ -668,7 +668,7 @@ def create_controller_ports(main_body):
         # Set up cover material (semi-transparent)
         nodes["Principled BSDF"].inputs["Base Color"].default_value = (0.1, 0.1, 0.1, 1)
         nodes["Principled BSDF"].inputs["Roughness"].default_value = 0.4
-        nodes["Principled BSDF"].inputs["Transmission"].default_value = 0.2
+        nodes["Principled BSDF"].inputs["Metallic"].default_value = 0.1
 
         # Add the material to the cover
         cover.data.materials.append(cover_mat)
