@@ -778,6 +778,91 @@ def create_controller_ports(main_body):
 
     return port1, port2, pins1, pins2
 
+def create_ventilation_grilles(main_body):
+    def create_top_grilles():
+        # Create the main grille patern
+        bpy.ops.mesh.primitive_cube_add(size=1)
+        grille = bpy.context.active_object
+        grille.name = "Genesis_Top Grilles"
+
+        # Set dimensions for the grille area
+        grille.scale.x = 0.15 # Width of grille area
+        grille.scale.y = 0.05 # Depth of grille arae
+        grille.scale.z = 0.001 # Very thin for the grille pattern
+
+        # Apply scale
+        bpy.ops.object.transform_apply(scale=True)
+
+        # Position the grille
+        grille.location.x = 0 # Center horizontally
+        grille.location.y = 0.1 # Slightly forward on top
+        grille.location.z = 0.0572 # Top surface (57.2 mm height)
+        
+        # Create grille material
+        grille_mat = bpy.data.materials.new(name="Genesis_Grille_Material")
+        grille_mat.use_nodes = True
+        nodes = grille_mat.node_tree.nodes
+
+        # Set up grille material
+        nodes["Principled BSDF"].inputs["Base Color"].default_value = (0.02, 0.02, 0.02, 1)
+        nodes["Principled BSDF"].inputs["Roughness"].default_value = 0.3
+
+        # Add the material to the grille
+        grille.data.materials.append(grille_mat)
+
+        # Create the grille pattern using boolean operations
+        def create_grille_slots():
+            slots = []
+            # Create multiple slots for the grille pattern
+            for i in range(10): # Number of slots
+                bpy.ops.mesh.primitive_cube_add(size=1)
+                slot = bpy.context.active_object
+                slot.name = f"Genesis_Grille_Slot_{i}"
+
+                # Set dimensions for each slot
+                slot.scale.x = 0.002 # Width of slot
+                slot.scale.y = 0.05 # Depth of slot
+                slot.scale.z = 0.002 # Height of slot
+
+                # Apply scale
+                bpy.ops.object.transform_apply(scale=True)
+
+                # Position the slot
+                x_pos = -0.075 + (i * 0.015) # Space slots evenly
+                slot.location.x = x_pos
+                slot.location.y = 0.1
+                slot.location.z = 0.0572
+
+                slots.append(slot)
+
+            return slots
+        
+        # Create the slots
+        slots = create_grille_slots()
+
+        # Use boolean operations to create the grille pattern
+        for slot in slots:
+            bool_mod = grille.modifiers.new(name=f"Grille_Slot_{slot.name}", type='BOOLEAN')
+            bool_mod.object = slot
+            bool_mod.operation = 'DIFFERENCE'
+
+            # Apply the boolean modifier
+            bpy.context.view_layer.objects.active = grille
+            bpy.ops.object.modifier_apply(modifier=f"Grille_Slot_{slot.name}")
+
+            # Delete the slot object
+            bpy.data.objects.remove(slot)
+
+        return grille
+    
+    # Create the top grilles
+    top_grilles = create_top_grilles()
+
+    # Parent the grilles to the main body
+    top_grilles.parent = main_body
+
+    return top_grilles
+
 def create_materials():
     # Create basic material
     mat = bpy.data.materials.new(name="Genesis_Black")
@@ -827,6 +912,9 @@ def main():
 
     # Create controller ports
     port1, port2, pins1, pins2 = create_controller_ports(main_body)
+
+    # Create ventilation grilles
+    top_grilles = create_ventilation_grilles(main_body)
 
     # Create and assign material
     mat = create_materials()
