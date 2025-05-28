@@ -470,13 +470,13 @@ def create_buttons(main_body):
     return power_button, reset_button, power_led
 
 def create_controller_ports(main_body):
-    def create_dsub_port(name, position_x):
+    def create_port_base(name, position_x):
         # Create the port housing
         bpy.ops.mesh.primitive_cube_add(size=1)
         port = bpy.context.active_object
         port.name = f"Genesis_{name}_Port"
 
-        # Set dimensions (in meters)
+         # Set dimensions (in meters)
         port.scale.x = 0.0381 # Width: 1.5 inches (38.1 mm)
         port.scale.y = 0.005 # Depth: 0.2 inches (5 mm)
         port.scale.z = 0.0127 # Height: 0.5 inches (12.7 mm)
@@ -488,48 +488,6 @@ def create_controller_ports(main_body):
         port.location.x = position_x
         port.location.y = 0.2146 # Front face (214.6 mm depth)
         port.location.z = 0.0286 # Half of height (57.2/2 mm)
-
-        # Create the 9-pin connector
-        def create_pins():
-            pins = []
-            # Pin layout for 9-pin D-sub
-            pin_positions = [
-                (-0.015, 0.005), # Pin 1
-                (-0.015, 0), # Pin 2
-                (-0.015, -0.005), # Pin 3
-                (0, 0.005), # Pin 4
-                (0, 0), # Pin 5
-                (0, -0.005), # Pin 6
-                (0.015, 0.005), # Pin 7
-                (0.015, 0), # Pin 8
-                (0.015, -0.005) # Pin 9
-            ]
-
-            for i, (x, y) in enumerate(pin_positions, 1):
-                bpy.ops.mesh.primitive_cylinder_add(radius=0.001, depth=0.003)
-                pin = bpy.context.active_object
-                pin.name = f"Genesis_{name}_Pin_{i}"
-
-                # Position the pin
-                pin.location.x = position_x + x
-                pin.location.y = 0.2146 + 0.003 # Slightly forward of port
-                pin.location.z = 0.0286 + y
-
-                # Create pin material
-                pin_mat = bpy.data.materials.new(name=f"Genesis_{name}_Pin_Material_{i}")
-                pin_mat.use_nodes = True
-                nodes = pin_mat.node_tree.nodes
-
-                # Set up pin material (metallic)
-                nodes["Principled BSDF"].inputs["Base Color"].default_value = (0.8, 0.8, 0.8, 1)
-                nodes["Principled BSDF"].inputs["Metallic"].default_value = 1.0
-                nodes["Principled BSDF"].inputs["Roughness"].default_value = 0.2
-
-                # Add the material to the pin
-                pin.data.materials.append(pin_mat)
-                pins.append(pin)
-            
-            return pins
 
         # Create port material
         port_mat = bpy.data.materials.new(name=f"Genesis_{name}_Port_Material")
@@ -543,28 +501,224 @@ def create_controller_ports(main_body):
         # Add the material to the port
         port.data.materials.append(port_mat)
 
-        # Create the pins
-        pins = create_pins()
-
-        # Parent pins to port
-        for pin in pins:
-            pin.parent = port
+        return port
         
-        return port, pins
-    
-    # Create both controller ports
-    port1, pins1 = create_dsub_port("Controller1", -0.02)
-    port2, pins2 = create_dsub_port("Controller2", 0.02)
+    def create_port_shielding(port, position_x):
+        bpy.ops.mesh.primitive_cube_add(size=1)
+        shield = bpy.context.active_object
+        shield.name = f"Genesis_{port.name}_Shielding"
 
-    # Parent ports to main body
-    port1.parent = main_body
-    port2.parent = main_body
+        # Set dimensions for shielding
+        shield.scale.x = 0.040 # Slightly wider than port
+        shield.scale.y = 0.003 # Thin metal shield
+        shield.scale.z = 0.014 # Slightly taller than port
+
+        # Apply scale
+        bpy.ops.object.transform_apply(scale=True)
+
+        # Position the shielding
+        shield.location.x = position_x
+        shield.location.y = 0.2146 + 0.004 # Slightly forward of port
+        shield.location.z = 0.0286
+
+        # Create shielding material
+        shield_mat = bpy.data.materials.new(name=f"Genesis_{port.name}_Shielding_Material")
+        shield_mat.use_nodes = True
+        nodes = shield_mat.node_tree.nodes
+
+        # Set up shielding material (metallic)
+        nodes["Principled BSDF"].inputs["Base Color"].default_value = (0.7, 0.7, 0.7, 1)
+        nodes["Principled BSDF"].inputs["Metallic"].default_value = 1.0
+        nodes["Principled BSDF"].inputs["Roughness"].default_value = 0.2
+
+        # Add the material to the shielding
+        shield.data.materials.append(shield_mat)
+        shield.parent = port
+        
+        return shield
+
+    def create_port_label(port, position_x):
+        bpy.ops.mesh.primitive_plane_add(size=1)
+        label = bpy.context.active_object
+        label.name = f"Genesis_{port.name}_Label"
+
+        # Set dimensions for label
+        label.scale.x = 0.015 # Width
+        label.scale.y = 0.005 # Height
+
+        # Apply scale
+        bpy.ops.object.transform_apply(scale=True)
+
+        # Position the label
+        label.location.x = position_x
+        label.location.y = 0.2146 + 0.007 # Forward of port
+        label.location.z = 0.0286 + 0.008 # Above port
+
+        # Create label material
+        label_mat = bpy.data.materials.new(name=f"Genesis_{port.name}_Label_Material")
+        label_mat.use_nodes = True
+        nodes = label_mat.node_tree.nodes
+
+        # Set up label material (white text)
+        nodes["Principled BSDF"].inputs["Base Color"].default_value = (1, 1, 1, 1)
+        nodes["Principled BSDF"].inputs["Roughness"].default_value = 0.2
+
+        # Add the material to the label
+        label.data.materials.append(label_mat)
+        label.parent = port
+
+        return label
+
+    def create_9pin_connector(port, position_x):
+        # Create the 9-pin connector
+        bpy.ops.mesh.primitive_cube_add(size=1)
+        connector = bpy.context.active_object
+        connector.name = f"Genesis_{port.name}_Connector"
+        
+        # Set dimensions for connector
+        connector.scale.x = 0.035 # Width
+        connector.scale.y = 0.004 # Depth
+        connector.scale.z = 0.011 # Height
+
+        # Apply scale
+        bpy.ops.object.transform_apply(scale=True)
+
+        # Position the connector
+        connector.location.x = position_x
+        connector.location.y = 0.2146 + 0.002 # Slightly forward of port
+        connector.location.z = 0.0286
+
+        # Create pins
+        pins = []
+        pin_positions = [
+            (-0.015, 0.005), # Pin 1
+            (-0.015, 0), # Pin 2
+            (-0.015, -0.005), # Pin 3
+            (0, 0.005), # Pin 4
+            (0, 0), # Pin 5
+            (0, -0.005), # Pin 6
+            (0.015, 0.005), # Pin 7
+            (0.015, 0), # Pin 8
+            (0.015, -0.005) # Pin 9
+        ]
+
+        for i, (x, y) in enumerate(pin_positions, 1):
+            bpy.ops.mesh.primitive_cylinder_add(radius=0.001, depth=0.003)
+            pin = bpy.context.active_object
+            pin.name = f"Genesis_{port.name}_Pin_{i}"
+
+            # Position the pin
+            pin.location.x = position_x + x
+            pin.location.y = 0.2146 + 0.003
+            pin.location.z = 0.0286 + y
+
+            # Create pin material
+            pin_mat = bpy.data.materials.new(name=f"Genesis_{port.name}_Pin_Material_{i}")
+            pin_mat.use_nodes = True
+            nodes = pin_mat.node_tree.nodes
+
+            # Set up pin material (metallic)
+            nodes["Principled BSDF"].inputs["Base Color"].default_value = (0.8, 0.8, 0.8, 1)
+            nodes["Principled BSDF"].inputs["Metallic"].default_value = 1.0
+            nodes["Principled BSDF"].inputs["Roughness"].default_value = 0.2
+
+            # Add the material to the pin
+            pin.data.materials.append(pin_mat)
+            pin.parent = connector
+            pins.append(pin)
+        
+        # Create the connector material
+        connector_mat = bpy.data.materials.new(name=f"Genesis_{port.name}_Connector_Material")
+        connector_mat.use_nodes = True
+        nodes = connector_mat.node_tree.nodes
+
+        # Set up connector material
+        nodes["Principled BSDF"].inputs["Base Color"].default_value = (0.1, 0.1, 0.1, 1)
+        nodes["Principled BSDF"].inputs["Roughness"].default_value = 0.3
+
+        # Add the material to the connector
+        connector.data.materials.append(connector_mat)
+        connector.parent = port
+
+        return connector, pins
+    
+    def create_dust_cover(port, position_x):
+        bpy.ops.mesh.primitive_cube_add(size=1)
+        cover = bpy.context.active_object
+        cover.name = f"Genesis_{port.name}_Dust_Cover"
+
+        # Set dimensions for cover
+        cover.scale.x = 0.039 # Slightly wider than port
+        cover.scale.y = 0.002 # Thin cover
+        cover.scale.z = 0.013 # Slightly taller than port
+
+        # Apply scale
+        bpy.ops.object.transform_apply(scale=True)
+
+        # Position the cover
+        cover.location.x = position_x
+        cover.location.y = 0.2146 + 0.006 # Forward of port
+        cover.location.z = 0.0286
+
+        # Create cover material
+        cover_mat = bpy.data.materials.new(name=f"Genesis_{port.name}_Dust_Cover_Material")
+        cover_mat.use_nodes = True
+        nodes = cover_mat.node_tree.nodes
+
+        # Set up cover material (semi-transparent)
+        nodes["Principled BSDF"].inputs["Base Color"].default_value = (0.1, 0.1, 0.1, 1)
+        nodes["Principled BSDF"].inputs["Roughness"].default_value = 0.4
+        nodes["Principled BSDF"].inputs["Transmission"].default_value = 0.2
+
+        # Add the material to the cover
+        cover.data.materials.append(cover_mat)
+        cover.parent = port
+
+        return cover
+    
+    def create_mounting_brackets(port, position_x):
+        brackets = []
+        for side in ['left', 'right']:
+            bpy.ops.mesh.primitive_cube_add(size=1)
+            bracket = bpy.context.active_object
+            bracket.name = f"Genesis_{port.name}_Bracket_{side}"
+
+            # Set dimensions for bracket
+            bracket.scale.x = 0.002 # Width
+            bracket.scale.y = 0.008 # Depth
+            bracket.scale.z = 0.0127 # Height
+
+            # Apply scale
+            bpy.ops.object.transform_apply(scale=True)
+
+            # Position the bracket
+            x_offset = -0.020 if side == 'left' else 0.020
+            bracket.location.x = position_x + x_offset
+            bracket.location.y = 0.2146
+            bracket.location.z = 0.0286
+
+            # Create bracket material
+            bracket_mat = bpy.data.materials.new(name=f"Genesis_{port.name}_Bracket_Material_{side}")
+            bracket_mat.use_nodes = True
+            nodes = bracket_mat.node_tree.nodes
+
+            # Set up bracket material (metallic)
+            nodes["Principled BSDF"].inputs["Base Color"].default_value = (0.8, 0.8, 0.8, 1)
+            nodes["Principled BSDF"].inputs["Metallic"].default_value = 1.0
+            nodes["Principled BSDF"].inputs["Roughness"].default_value = 0.3
+
+            # Add the material to the bracket
+            bracket.data.materials.append(bracket_mat)
+            bracket.parent = port
+            brackets.append(bracket)
+
+        return brackets
 
     # Create recess for ports
     def create_port_recess():
         bpy.ops.mesh.primitive_cube_add(size=1)
         recess = bpy.context.active_object
-        recess.name = "Genesis_Controller_Recess"
+        recess.name = "Genesis_Controller_Ports_Recess"
 
         # Set dimensions for recess
         recess.scale.x = 0.085 # Width to cover both ports
@@ -591,9 +745,38 @@ def create_controller_ports(main_body):
         # Delete the recess object
         bpy.data.objects.remove(recess)
     
-    # Create the recess
+    # Create both controller ports
+    port1 = create_port_base("Controller1", -0.02)
+    port2 = create_port_base("Controller2", 0.02)
 
-    return port1, port2, pins1, pins2
+    # Create 9-pin connectors
+    connector1, pins1 = create_9pin_connector(port1, -0.02)
+    connector2, pins2 = create_9pin_connector(port2, 0.02)
+
+    # Create dust covers
+    cover1 = create_dust_cover(port1, -0.02)
+    cover2 = create_dust_cover(port2, 0.02)
+
+    # Create mounting brackets
+    brackets1 = create_mounting_brackets(port1, -0.02)
+    brackets2 = create_mounting_brackets(port2, 0.02)
+
+    # Create shielding for each port
+    shield1 = create_port_shielding(port1, -0.02)
+    shield2 = create_port_shielding(port2, 0.02)
+
+    # Create labels for each port
+    label1 = create_port_label(port1, -0.02)
+    label2 = create_port_label(port2, 0.02)
+
+    # Create the recess
+    create_port_recess()
+
+    # Parent ports to main body
+    port1.parent = main_body
+    port2.parent = main_body
+
+    return port1, port2
 
 def create_materials():
     # Create basic material
