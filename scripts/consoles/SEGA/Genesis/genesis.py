@@ -776,7 +776,7 @@ def create_controller_ports(main_body):
     port1.parent = main_body
     port2.parent = main_body
 
-    return port1, port2
+    return port1, port2, pins1, pins2
 
 def create_materials():
     # Create basic material
