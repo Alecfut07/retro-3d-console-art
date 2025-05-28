@@ -736,7 +736,7 @@ def create_controller_ports(main_body):
         # Create boolean modifier to cut recess
         bool_mod = main_body.modifiers.new(name="Controller_Ports_Recess", type='BOOLEAN')
         bool_mod.object = recess
-        bool_mod.operation = 'DIFERENCE'
+        bool_mod.operation = 'DIFFERENCE'
 
         # Apply the boolean modifier
         bpy.context.view_layer.objects.active = main_body
