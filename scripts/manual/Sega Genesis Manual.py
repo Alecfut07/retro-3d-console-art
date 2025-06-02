@@ -77,3 +77,50 @@ def create_manual_spine(width=8.5, height=11, thickness=0.02, num_pages=20):
     spine.data.materials.append(spine_material)
 
     return spine
+
+def create_manual(num_pages=20):
+    # Create a complete manual with specified number of pages
+    clear_scene()
+
+    # Manual dimensions
+    width = 8.5
+    height = 11
+    page_thickness = 0.01
+    cover_thickness = 0.02
+
+    # Create front cover
+    front_cover = create_manual_cover(width, height, cover_thickness)
+    front_cover.location = (0, 0, 0)
+
+    # Create pages
+    pages = []
+    for i in range(num_pages):
+        page = create_manual_page(width, height, page_thickness)
+        # Offset each page slightly
+        page.location = (0, 0 (i + 1) * page_thickness)
+        pages.append(page)
+
+        # Create page material
+        page_material = create_material(f"PageMaterial_{i}", (0.95, 0.95, 0.95, 1.0), metallic=0.0, roughness=0.8)
+        page.data.materials.append(page_material)
+
+    # Create back cover
+    back_cover = create_manual_cover(width, height, cover_thickness)
+    back_cover.location = (0, 0, (num_pages + 1) * page_thickness)
+
+    # Create spine
+    spine = create_manual_spine(width, height, cover_thickness, num_pages)
+    spine.location = (-width / 2 - spine.scale.x / 2, 0, (num_pages + 1) * page_thickness / 2)
+
+    # Parent all objects to front cover for easier manipulation
+    for page in pages:
+        page.parent = front_cover
+    back_cover.parent = front_cover
+    spine.parent = front_cover
+
+    # Add empty object for rotation pivot
+    bpy.ops.object.empty_add(type='PLAIN_AXES')
+    pivot = bpy.context.active_object
+    pivot.location = (-width / 2, 0, 0)
+    front_cover.parent = pivot
+    return front_cover, pages, back_cover, spine, pivot
