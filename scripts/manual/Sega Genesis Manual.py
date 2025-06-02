@@ -47,3 +47,33 @@ def create_manual_page(width=8.5, height=11, thickness=0.01):
     subsurf.levels = 2
 
     return page
+
+def create_manual_cover(width=8.5, height=11, thickness=0.02):
+    # Create the manual cover
+    cover = create_manual_page(width, height, thickness)
+
+    # Create cover material
+    cover_material = create_material("CoverMaterial", (0.1, 0.1, 0.1, 1.0), metallic=0.1, roughness=0.3)
+    cover.data.materials.append(cover_material)
+
+    return cover
+
+def create_manual_spine(width=8.5, height=11, thickness=0.02, num_pages=20):
+    # Create the manual spine
+    bpy.ops.mesh.primitive_cube_add()
+    spine = bpy.context.active_object
+
+    # Calculate spine width based on number of pages
+    spine_width = num_pages * 0.01 # 0.01 units per page
+
+    # Scale to correct dimensions
+    spine.scale = (spine_width, height, thickness)
+
+    # Apply scale
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+
+    # Create spine material
+    spine_material = create_material("SpineMaterial", (0.2, 0.2, 0.2, 1.0), metallic=0.1, roughness=0.3)
+    spine.data.materials.append(spine_material)
+
+    return spine
