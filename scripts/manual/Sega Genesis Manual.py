@@ -1,3 +1,4 @@
+import os
 import bpy
 import math
 from mathutils import Vector
@@ -78,8 +79,48 @@ def create_manual_spine(width=8.5, height=11, thickness=0.02, num_pages=20):
 
     return spine
 
-def create_manual(num_pages=20):
-    # Create a complete manual with specified number of pages
+def load_and_apply_texture(obj, image_path):
+    # Load an image and apply it as a textureto the object
+    if not os.path.exists(image_path):
+        print(f"Warning: Image file not found: {image_path}")
+        return None
+    
+    # Create a new material
+    material = bpy.data.materials.new(name=f"Texture_{obj.name}")
+    material.use_nodes = True
+    nodes = material.node_tree.nodes
+    links = material.node_tree.links
+
+    # Clear default nodes
+    nodes.clear()
+
+    # Create nodes
+    principled = nodes.new('ShaderNodeBsdfPrincipled')
+    output = nodes.new('ShaderNodeOutputMaterial')
+    tex_image = nodes.new('ShaderNodeTexImage')
+
+    # Load the image
+    try:
+        image = bpy.data.images.load(image_path)
+        tex_image.image = image
+    except:
+        print(f"Error loading image: {image_path}: {str(e)}")
+        return None
+    
+    # Link nodes
+    links.new(tex_image.outputs['Color'], principled.inputs['Base Color'])
+    links.new(principled.outputs['BSDF'], output.inputs['Surface'])
+
+    # Apply material to object
+    if obj.data.materials:
+        obj.data.materials[0] = material
+    else:
+        obj.data.materials.append(material)
+
+    return material
+
+def create_manual_with_images(cover_front_path, cover_back_path, page_paths):
+    # Create a manual with actual images for cover and pages
     clear_scene()
 
     # Manual dimensions
@@ -91,26 +132,24 @@ def create_manual(num_pages=20):
     # Create front cover
     front_cover = create_manual_cover(width, height, cover_thickness)
     front_cover.location = (0, 0, 0)
+    load_and_apply_texture(front_cover, cover_front_path)
 
     # Create pages
     pages = []
-    for i in range(num_pages):
+    for i, page_path in enumerate(page_paths):
         page = create_manual_page(width, height, page_thickness)
-        # Offset each page slightly
-        page.location = (0, 0 (i + 1) * page_thickness)
+        page.location = (0, 0, (i + 1) * page_thickness)
+        load_and_apply_texture(page, page_path)
         pages.append(page)
 
-        # Create page material
-        page_material = create_material(f"PageMaterial_{i}", (0.95, 0.95, 0.95, 1.0), metallic=0.0, roughness=0.8)
-        page.data.materials.append(page_material)
-
     # Create back cover
-    back_cover = create_manual_cover(width, height, cover_thickness)
-    back_cover.location = (0, 0, (num_pages + 1) * page_thickness)
+    back_cover = create_manual_page(width, height, cover_thickness)
+    back_cover.location = (0, 0, (len(page_paths) + 1) * page_thickness)
+    load_and_apply_texture(page, page_path)
 
     # Create spine
-    spine = create_manual_spine(width, height, cover_thickness, num_pages)
-    spine.location = (-width / 2 - spine.scale.x / 2, 0, (num_pages + 1) * page_thickness / 2)
+    spine = create_manual_spine(width, height, cover_thickness, len(page_paths))
+    spine.location = (-width / 2 - spine.scale.x / 2, 0, (len(page_paths) + 1) * page_thickness / 2)
 
     # Parent all objects to front cover for easier manipulation
     for page in pages:
@@ -123,6 +162,7 @@ def create_manual(num_pages=20):
     pivot = bpy.context.active_object
     pivot.location = (-width / 2, 0, 0)
     front_cover.parent = pivot
+    
     return front_cover, pages, back_cover, spine, pivot
 
 def setup_export_settings():
@@ -138,8 +178,19 @@ def setup_export_settings():
     bg.inputs['Strength'].default_value = 1.0
 
 def main():
+    # Define paths to your images
+    cover_front_path = "path/to/your/front_cover.png"
+    cover_back_path = "path/to/your/back_cover.png"
+    page_paths = [
+        "path/to/your/page1.png",
+        "path/to/your/page2.png",
+        # Add all your page paths here
+    ]
+    
     # Create the manual
-    front_cover, pages, back_cover, spine, pivot = create_manual(num_pages=20)
+    front_cover, pages, back_cover, spine, pivot = create_manual_with_images(
+        cover_front_path, cover_back_path, page_paths
+    )
 
     # Setup export settings
     setup_export_settings()
