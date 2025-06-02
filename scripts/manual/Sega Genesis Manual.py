@@ -124,3 +124,34 @@ def create_manual(num_pages=20):
     pivot.location = (-width / 2, 0, 0)
     front_cover.parent = pivot
     return front_cover, pages, back_cover, spine, pivot
+
+def setup_export_settings():
+    # Setup export settings for Android compatibility
+    # Set up render engine for better preview
+    bpy.context.scene.render.engine = 'CYCLES'
+
+    # Set up world background
+    world = bpy.context.scene.world
+    world.use_nodes = True
+    bg = world.node_tree.nodes['Background']
+    bg.inputs['Color'].default_value = (0.1, 0.1, 0.1, 1.0)
+    bg.inputs['Strength'].default_value = 1.0
+
+def main():
+    # Create the manual
+    front_cover, pages, back_cover, spine, pivot = create_manual(num_pages=20)
+
+    # Setup export settings
+    setup_export_settings()
+
+    # Add camera and light for preview
+    bpy.ops.object.camera_add(location=(0, -20, 10), rotation=(math.radians(60), 0, 0))
+    camera = bpy.context.active_object
+    bpy.context.scene.camera = camera
+    
+    bpy.ops.object.light_add(type='SUN', location=(5, 5, 10))
+    light = bpy.context.active_object
+    light.data.energy = 5.0
+
+if __name__ == "__main__":
+    main()
